@@ -3,6 +3,16 @@
 version = 3
 
 [[package]]
+name = "Rusys"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "crossterm",
+ "ratatui",
+ "sysinfo",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -505,16 +515,6 @@ dependencies = [
  "ntapi",
  "rayon",
  "windows",
-]
-
-[[package]]
-name = "system-monitor"
-version = "0.1.0"
-dependencies = [
- "colored",
- "crossterm",
- "ratatui",
- "sysinfo",
 ]
 
 [[package]]

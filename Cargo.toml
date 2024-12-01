@@ -1,7 +1,9 @@
 [package]
-name = "system-monitor"
+name = "Rusys"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = ["ZxFae33"]
 
 [dependencies]
 ratatui = { version = "0.26.1", features = ["all-widgets"] }
