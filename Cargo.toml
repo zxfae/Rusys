@@ -1,0 +1,10 @@
+[package]
+name = "system-monitor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ratatui = { version = "0.26.1", features = ["all-widgets"] }
+sysinfo = "0.32"
+colored = "2.0.0"
+crossterm = "0.27.0"
