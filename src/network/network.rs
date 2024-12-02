@@ -125,7 +125,7 @@ impl NetworkMonitor
                                             self.last_transmitted.insert(interface_name.to_string(), current_tx);
 
                                             //Call get_ipv4 function
-                                            let IPv4 = Self::get_ipv4(network.ip_networks());
+                                            let ipv4 = Self::get_ipv4(network.ip_networks());
                                             //Push values to Vec
                                             //Please refeere to the NetworkData struct;
                                             //If u can add more datas u need pass here
@@ -133,7 +133,7 @@ impl NetworkMonitor
                                             {
                                                               interface: interface_name.to_string(),
                                                               mac_address: network.mac_address().to_string(),
-                                                              ip_network: IPv4,
+                                                              ip_network: ipv4,
                                                               received: network.received(),
                                                               transmitted: network.transmitted(),
                                                               total_received: current_rx,

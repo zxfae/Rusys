@@ -1,82 +1,57 @@
 use ratatui::
 {
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Modifier},
-    widgets::{Block, Borders, Paragraph, Wrap, BorderType},
+    widgets::{Block, Borders, Paragraph, Wrap, BorderType, Clear},
     text::{Span, Line},
     prelude::Alignment,
     Frame,
 };
+
 use crate::syst::infos::get_system_info;
 use super::app::App;
 
+//STYLE
+const TITLE_STYLE: Style = Style::new()
+    .fg(Color::Rgb(158,206,106))
+    .add_modifier(Modifier::BOLD);
+
+const BORDER_STYLE: Style = Style::new()
+    .fg(Color::Rgb(86,95,137))
+    .add_modifier(Modifier::BOLD);
+
+const MIN_SYS_INFO_HEIGHT: u16 = 10;
+const MIN_CPU_INFO_HEIGHT: u16 = 15;
+//const MIN_NET_INFO_HEIGHT: u16 = 15;
+
 pub fn draw(frame: &mut Frame, app: &mut App)
 {
-    let main_chunks = Layout::default()
+    //Window size
+    let term_size = frame.size();
+
+    //Split horizontal term by 2 50/50
+    let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
         .constraints([
-            Constraint::Percentage(60),
-                    Constraint::Percentage(40),
-        ])
-        .split(frame.size());
+            Constraint::Percentage(50),
+                    Constraint::Percentage(50),
+    ])
+    .split(term_size);
 
+    //Create column split; showing 2 blocks
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(0)
         .constraints([
-            Constraint::Percentage(20),
-                    Constraint::Percentage(25),
-                    Constraint::Percentage(25),
-                    Constraint::Percentage(30),
-        ])
-        .split(main_chunks[0]);
+            Constraint::Length(MIN_SYS_INFO_HEIGHT),
+                    Constraint::Min(MIN_CPU_INFO_HEIGHT),
+    ])
+    .split(horizontal_chunks[0]);
 
+    //Impl
     system_info(frame, left_chunks[0]);
     cpu_info(frame, app, left_chunks[1]);
-    network_info(frame, app, left_chunks[2]);
-
-    let right_block = Block::default()
-        .title("-___╔══ System Monitor ══╗___-")
-        .title_alignment(Alignment::Center)
-        //Block informations
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-        .style(Style::default().bg(Color::Reset));
-
-    frame.render_widget(right_block, main_chunks[1]);
-}
-
-//Automatic format
-fn format_network_rate(rate: f64) -> String
-{
-    let rate_bytes = rate;
-    if rate_bytes >= 1_000_000_000.0 {
-        format!("{:.2} GB/s", rate_bytes / 1_000_000_000.0)
-    } else if rate_bytes >= 1_000_000.0 {
-        format!("{:.2} MB/s", rate_bytes / 1_000_000.0)
-    } else if rate_bytes >= 1_000.0 {
-        format!("{:.2} KB/s", rate_bytes / 1_000.0)
-    } else {
-        format!("{:.0} B/s", rate_bytes)
-    }
-}
-//When
-fn format_network_total(bytes: u64) -> String
-{
-    let bytes = bytes as f64;
-    if bytes >= 1_000_000_000_000.0 {
-        format!("{:.2} TB", bytes / 1_000_000_000_000.0)
-    } else if bytes >= 1_000_000_000.0 {
-        format!("{:.2} GB", bytes / 1_000_000_000.0)
-    } else if bytes >= 1_000_000.0 {
-        format!("{:.2} MB", bytes / 1_000_000.0)
-    } else if bytes >= 1_000.0 {
-        format!("{:.2} KB", bytes / 1_000.0)
-    } else {
-        format!("{:.0} B", bytes)
-    }
+    network_info(frame, app, horizontal_chunks[1]);
 }
 
 //Calling syst info, UI creation
@@ -248,4 +223,37 @@ fn network_info(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect)
     .wrap(Wrap { trim: true });
 
     frame.render_widget(network_paragraph, area);
+}
+
+
+//metrics converter
+
+fn format_network_rate(rate: f64) -> String
+{
+    let rate_bytes = rate;
+    if rate_bytes >= 1_000_000_000.0 {
+        format!("{:.2} GB/s", rate_bytes / 1_000_000_000.0)
+    } else if rate_bytes >= 1_000_000.0 {
+        format!("{:.2} MB/s", rate_bytes / 1_000_000.0)
+    } else if rate_bytes >= 1_000.0 {
+        format!("{:.2} KB/s", rate_bytes / 1_000.0)
+    } else {
+        format!("{:.0} B/s", rate_bytes)
+    }
+}
+
+fn format_network_total(bytes: u64) -> String
+{
+    let bytes = bytes as f64;
+    if bytes >= 1_000_000_000_000.0 {
+        format!("{:.2} TB", bytes / 1_000_000_000_000.0)
+    } else if bytes >= 1_000_000_000.0 {
+        format!("{:.2} GB", bytes / 1_000_000_000.0)
+    } else if bytes >= 1_000_000.0 {
+        format!("{:.2} MB", bytes / 1_000_000.0)
+    } else if bytes >= 1_000.0 {
+        format!("{:.2} KB", bytes / 1_000.0)
+    } else {
+        format!("{:.0} B", bytes)
+    }
 }
