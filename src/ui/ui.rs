@@ -21,7 +21,7 @@ const BORDER_STYLE: Style = Style::new()
     .fg(Color::Rgb(86,95,137))
     .add_modifier(Modifier::BOLD);
 
-const MIN_SYS_INFO_HEIGHT: u16 = 10;
+const MIN_SYS_INFO_HEIGHT: u16 = 7;
 const MIN_CPU_INFO_HEIGHT: u16 = 15;
 //const MIN_NET_INFO_HEIGHT: u16 = 15;
 
@@ -87,8 +87,17 @@ fn system_info(frame: &mut Frame, area: Rect)
     frame.render_widget(sys_paragraph, area);
 }
 
-fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
-{
+fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect) {
+    //Reducing windows depending at cpu size
+    let cpu_n = app.cpu_monitor.get_cpu_info().len();
+    let normal_size = (cpu_n * 2 + 2) as u16;
+    let block_area = Rect::new(
+        area.x,
+        area.y,
+        area.width,
+        normal_size.min(area.height)
+    );
+
     let cpu_info = Block::default()
     .title(Line::from(vec![
         Span::raw("╭─"),
@@ -101,9 +110,7 @@ fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
     .border_style(BORDER_STYLE);
 
     let mut info_lines: Vec<Line> = Vec::new();
-
-    for cpu in app.cpu_monitor.get_cpu_info()
-    {
+    for cpu in app.cpu_monitor.get_cpu_info() {
         let usage_percentage = cpu.usage;
         let (symbol, color) = match usage_percentage as f64 {
             metric if metric > 85.0 => ("▲", Color::Rgb(247, 118, 142)),
@@ -117,7 +124,6 @@ fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
             "█".repeat(filled_width),
                           "░".repeat(bar_width - filled_width)
         );
-
         info_lines.push(Line::from(vec![
             Span::raw(format!("│ Core {:2} ", cpu.index)),
                                    Span::styled(symbol.to_string(), Style::default().fg(color)),
@@ -130,7 +136,6 @@ fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
                                            Style::default().fg(color).add_modifier(Modifier::BOLD)
                                    ),
         ]));
-
         info_lines.push(Line::from(vec![
             Span::raw("│  "),
                                    Span::styled(
@@ -139,18 +144,17 @@ fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
                                    ),
         ]));
     }
-
     let cpu_block = Paragraph::new(info_lines)
     .block(cpu_info)
     .alignment(Alignment::Left)
     .wrap(Wrap { trim: true });
-
-    frame.render_widget(Clear, area);
-    frame.render_widget(cpu_block, area);
+    frame.render_widget(Clear, block_area);
+    frame.render_widget(cpu_block, block_area);
 }
 
 fn network_info(frame: &mut Frame, app: &mut App, area: Rect)
 {
+    let network_n = app.network_data.len();
     let network_info = Block::default()
     .title(Line::from(vec![
         Span::raw("╭─"),

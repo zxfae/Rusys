@@ -1,5 +1,6 @@
 use std::time::Instant;
 use sysinfo::{Networks, IpNetwork};
+use super::utils::{is_phy};
 
 ///Network information interface snapshot
 pub struct NetworkData
@@ -83,6 +84,10 @@ impl NetworkMonitor
 
         for (interface_name, network) in self.networks.iter()
         {
+            if !is_phy(interface_name)
+            {
+                continue
+            }
             //Create new variables with rrx && ttx
             let current_rx = network.total_received();
             let current_tx = network.total_transmitted();
