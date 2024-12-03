@@ -2,7 +2,8 @@ use nix::net::if_::InterfaceFlags;
 
 fn prefixes(pre: &str) -> bool
 {
-    //Dont show interfaces with ->
+    //Dont show interfaces with this prefixes->
+    //More ?
     let pref = ["docker", "veth", "br-", "virbr", "tun", "vmnet", "vboxnet", "wg", "bond", "dummy"];
     !pref.iter().any(|prefix| pre.starts_with(prefix))
 }
