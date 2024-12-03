@@ -2,7 +2,6 @@ use sysinfo::{System, RefreshKind, CpuRefreshKind};
 //All informations required
 pub struct CpuInfo {
     pub index: usize,
-    pub vendor_id: String,
     pub name: String,
     pub usage: f32,
     //Why using frequency ?
@@ -31,7 +30,6 @@ impl CpuMonitor {
             .enumerate()
             .map(|(i, cpu)| CpuInfo {
                 index: i,
-                vendor_id: cpu.vendor_id().to_string(),
                 name: cpu.name().to_string(),
                 usage: cpu.cpu_usage(),
                 frequency: cpu.frequency(),

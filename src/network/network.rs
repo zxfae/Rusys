@@ -10,10 +10,7 @@ pub struct NetworkData
     pub mac_address: String,
     //IPv4
     pub ip_network: String,
-    //Bytes received
-    pub received: u64,
-    //Bytes transmitted
-    pub transmitted: u64,
+    //Bytes
     pub total_received: u64,
     pub total_transmitted: u64,
     //Received per seconds
@@ -134,8 +131,6 @@ impl NetworkMonitor
                                                               interface: interface_name.to_string(),
                                                               mac_address: network.mac_address().to_string(),
                                                               ip_network: ipv4,
-                                                              received: network.received(),
-                                                              transmitted: network.transmitted(),
                                                               total_received: current_rx,
                                                               total_transmitted: current_tx,
                                                               rx_rate: avg_rx,

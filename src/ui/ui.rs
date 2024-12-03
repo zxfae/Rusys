@@ -10,6 +10,7 @@ use ratatui::
 
 use crate::syst::infos::get_system_info;
 use super::app::App;
+use super::utils::{format_network_rate, format_network_total, info_line};
 
 //STYLE
 const TITLE_STYLE: Style = Style::new()
@@ -55,165 +56,179 @@ pub fn draw(frame: &mut Frame, app: &mut App)
 }
 
 //Calling syst info, UI creation
-fn system_info(frame: &mut Frame, area: ratatui::layout::Rect)
+fn system_info(frame: &mut Frame, area: Rect)
 {
     let sys_info = Block::default()
-    .title("-___╔══ System Information ══╗___-")
+    .title(Line::from(vec![
+        Span::raw("╭─"),
+                      Span::styled(" System Information ", TITLE_STYLE),
+                      Span::raw("─╮"),
+    ]))
     .title_alignment(Alignment::Center)
     .borders(Borders::ALL)
-    .border_type(BorderType::Double)
-    .border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
-    .style(Style::default().bg(Color::Reset));
+    .border_type(BorderType::Rounded)
+    .border_style(BORDER_STYLE);
 
     let system_info = get_system_info();
     let text = vec![
-        Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
-                   Span::styled("Hostname: ", Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)),
-                   Span::styled(system_info.host_name, Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD)),
-        ]),
-        Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
-                   Span::styled("OS: ", Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)),
-                   Span::styled(system_info.os_name, Style::default().fg(Color::LightGreen)),
-        ]),
-        Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
-                   Span::styled("CPU Architecture: ", Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)),
-                   Span::styled(format!("{:?}", system_info.cpu_architecture), Style::default().fg(Color::Yellow)),
-        ]),
-        Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
-                   Span::styled("Kernel Version: ", Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)),
-                   Span::styled(system_info.kernel_version, Style::default().fg(Color::LightMagenta)),
-        ]),
-        Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
-                   Span::styled("Total Memory: ", Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)),
-                   Span::styled(
-                       format!("{} MB", system_info.total_memory / 1024 / 1024),
-                           Style::default().fg(Color::LightRed),
-                   ),
-        ]),
+        info_line("Hostname", system_info.host_name.as_str(), Color::Rgb(247, 118, 142)),
+        info_line("OS", system_info.os_name.as_str(), Color::Rgb(158, 206, 106)),
+        info_line("CPU Architecture", &format!("{:?}", system_info.cpu_architecture), Color::Rgb(224, 175, 104)),
+        info_line("Kernel Version", system_info.kernel_version.as_str(), Color::Rgb(187, 154, 247)),
+        info_line("Total Memory", &format!("{} MB", system_info.total_memory / 1024 / 1024), Color::Rgb(239, 111, 111)),
     ];
 
     let sys_paragraph = Paragraph::new(text)
     .block(sys_info)
     .alignment(Alignment::Left)
     .wrap(Wrap { trim: true });
+
+    frame.render_widget(Clear, area);
     frame.render_widget(sys_paragraph, area);
 }
 
-//Calling cpu info, UI creation
-fn cpu_info(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect)
+fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect)
 {
-    //Formatting block
     let cpu_info = Block::default()
-        .title("-___╔══ CPU Information ══╗___-")
-        .title_alignment(Alignment::Center)
-        .borders(Borders::ALL)
-        .border_type(BorderType::Thick)
-        .border_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
-        .style(Style::default().bg(Color::Reset));
+    .title(Line::from(vec![
+        Span::raw("╭─"),
+                      Span::styled(" CPU Usage ", TITLE_STYLE),
+                      Span::raw("─╮"),
+    ]))
+    .title_alignment(Alignment::Center)
+    .borders(Borders::ALL)
+    .border_type(BorderType::Rounded)
+    .border_style(BORDER_STYLE);
 
-    //Create line by lines
-    let mut infoby_lines: Vec<Line> = Vec::new();
-    //By cpu
+    let mut info_lines: Vec<Line> = Vec::new();
+
     for cpu in app.cpu_monitor.get_cpu_info()
     {
-        let (color_indicator, use_style) = match cpu.usage
-        {
-            //Metric value considere color displaying
-            metric if metric > 85.0 => ("⚠️", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
-            metric if metric > 50.0 => ("⚡", Style::default().fg(Color::Yellow)),
-            _ => ("✓", Style::default().fg(Color::Green)),
+        let usage_percentage = cpu.usage;
+        let (symbol, color) = match usage_percentage as f64 {
+            metric if metric > 85.0 => ("▲", Color::Rgb(247, 118, 142)),
+            metric if metric > 50.0 => ("►", Color::Rgb(224, 175, 104)),
+            _ => ("●", Color::Rgb(158, 206, 106)),
         };
-
-        let use_span = Span::styled(
-            format!("{:.1}%", cpu.usage),
-                use_style
+        let bar_width = 20;
+        let filled_width = ((usage_percentage as f64 / 100.0) * bar_width as f64).round() as usize;
+        let bar = format!(
+            "[{}{}]",
+            "█".repeat(filled_width),
+                          "░".repeat(bar_width - filled_width)
         );
 
-        infoby_lines.push(Line::from(vec![
+        info_lines.push(Line::from(vec![
             Span::raw(format!("│ Core {:2} ", cpu.index)),
-                              Span::raw(color_indicator),
-                              Span::raw(format!(" {} - {} - ", cpu.vendor_id, cpu.name)),
-                              use_span,
-                              Span::raw(format!(" - {}\n", cpu.frequency)),
+                                   Span::styled(symbol.to_string(), Style::default().fg(color)),
+                                   Span::styled(
+                                       format!(" {} ", bar),
+                                           Style::default().fg(color)
+                                   ),
+                                   Span::styled(
+                                       format!("{:>5.1}%", usage_percentage),
+                                           Style::default().fg(color).add_modifier(Modifier::BOLD)
+                                   ),
+        ]));
+
+        info_lines.push(Line::from(vec![
+            Span::raw("│  "),
+                                   Span::styled(
+                                       format!("{} - {} MHz", cpu.name, cpu.frequency),
+                                           Style::default().fg(Color::Rgb(169, 177, 214))
+                                   ),
         ]));
     }
 
-    //BlockCPU displaying with parameters
-    let cpu_block = Paragraph::new(infoby_lines)
-        .block(cpu_info)
-        .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true });
+    let cpu_block = Paragraph::new(info_lines)
+    .block(cpu_info)
+    .alignment(Alignment::Left)
+    .wrap(Wrap { trim: true });
 
+    frame.render_widget(Clear, area);
     frame.render_widget(cpu_block, area);
 }
 
-//Calling network info, UI creation
-fn network_info(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect)
+fn network_info(frame: &mut Frame, app: &mut App, area: Rect)
 {
     let network_info = Block::default()
-    .title("-___╔══ Network Information ══╗___-")
+    .title(Line::from(vec![
+        Span::raw("╭─"),
+                      Span::styled(" Network Activity ", TITLE_STYLE),
+                      Span::raw("─╮"),
+    ]))
     .title_alignment(Alignment::Center)
     .borders(Borders::ALL)
-    .border_type(BorderType::Thick)
-    .border_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
-    .style(Style::default().bg(Color::Reset));
+    .border_type(BorderType::Rounded)
+    .border_style(BORDER_STYLE);
 
     let mut text = Vec::new();
 
-    for network in &app.network_data {
+    for network in &app.network_data
+    {
         text.push(Line::from(vec![
-            Span::styled("│ ", Style::default().fg(Color::White)),
+            Span::raw("├"),
+                             Span::raw("─".repeat(3)),
                              Span::styled(
-                                 format!("Interface: {}", network.interface),
-                                     Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD)
+                                 format!(" {} ", network.interface),
+                                     Style::default().fg(Color::Rgb(187, 154, 247)).add_modifier(Modifier::BOLD)
                              ),
-                             Span::styled(" - MAC: ", Style::default().fg(Color::White)),
+                             Span::raw("─".repeat(20)),
+                             Span::raw("┤"),
+        ]));
+        text.push(Line::from(vec![
+            Span::raw("│ "),
+                             Span::styled("MAC: ".to_string(), Style::default().fg(Color::Rgb(169, 177, 214))),
                              Span::styled(
-                                 &network.mac_address,
-                                 Style::default().fg(Color::LightBlue).add_modifier(Modifier::BOLD)
-                             ),
-                             Span::styled(" - IP: ", Style::default().fg(Color::White)),
-                             Span::styled(
-                                 &network.ip_network,
-                                 Style::default().fg(Color::LightBlue).add_modifier(Modifier::BOLD)
+                                 network.mac_address.to_string(),
+                                          Style::default().fg(Color::Rgb(158, 206, 106))
                              ),
         ]));
-
         text.push(Line::from(vec![
-            Span::styled("│   ", Style::default().fg(Color::White)),
-                             Span::styled("RX: ", Style::default().fg(Color::Green)),
+            Span::raw("│ "),
+                             Span::styled("IP: ".to_string(), Style::default().fg(Color::Rgb(169, 177, 214))),
+                             Span::styled(
+                                 network.ip_network.to_string(),
+                                          Style::default().fg(Color::Rgb(158, 206, 106))
+                             ),
+        ]));
+        text.push(Line::from(vec![Span::raw("├─ Transfer Rates ─┤")]));
+        text.push(Line::from(vec![
+            Span::raw("│ "),
+                             Span::styled("↓ RX: ", Style::default().fg(Color::Rgb(158, 206, 106))),
                              Span::styled(
                                  format_network_rate(network.rx_rate),
-                                     Style::default().fg(Color::LightGreen)
+                                     Style::default().fg(Color::Rgb(187, 154, 247))
                              ),
-                             Span::styled(" | TX: ", Style::default().fg(Color::Yellow)),
+                             Span::raw("  "),
+                             Span::styled("↑ TX: ", Style::default().fg(Color::Rgb(224, 175, 104))),
                              Span::styled(
                                  format_network_rate(network.tx_rate),
-                                     Style::default().fg(Color::LightYellow)
+                                     Style::default().fg(Color::Rgb(187, 154, 247))
                              ),
         ]));
+        text.push(Line::from(vec![Span::raw("├─ Total Transfer ─┤")]));
 
         text.push(Line::from(vec![
-            Span::styled("│   ", Style::default().fg(Color::White)),
-                             Span::styled("Total RX: ", Style::default().fg(Color::Green)),
+            Span::raw("│ "),
+                             Span::styled("↓ Total: ", Style::default().fg(Color::Rgb(158, 206, 106))),
                              Span::styled(
                                  format_network_total(network.total_received),
-                                     Style::default().fg(Color::LightGreen)
-                             ),
-                             Span::styled(" | Total TX: ", Style::default().fg(Color::Yellow)),
-                             Span::styled(
-                                 format_network_total(network.total_transmitted),
-                                     Style::default().fg(Color::LightYellow)
+                                     Style::default().fg(Color::Rgb(187, 154, 247))
                              ),
         ]));
-
         text.push(Line::from(vec![
-            Span::styled("│", Style::default().fg(Color::White)),
+            Span::raw("│ "),
+                             Span::styled("↑ Total: ", Style::default().fg(Color::Rgb(224, 175, 104))),
+                             Span::styled(
+                                 format_network_total(network.total_transmitted),
+                                     Style::default().fg(Color::Rgb(187, 154, 247))
+                             ),
+        ]));
+        text.push(Line::from(vec![
+            Span::raw("├"),
+                             Span::raw("─".repeat(30)),
+                             Span::raw("┤"),
         ]));
     }
 
@@ -222,38 +237,6 @@ fn network_info(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect)
     .alignment(Alignment::Left)
     .wrap(Wrap { trim: true });
 
+    frame.render_widget(Clear, area);
     frame.render_widget(network_paragraph, area);
-}
-
-
-//metrics converter
-
-fn format_network_rate(rate: f64) -> String
-{
-    let rate_bytes = rate;
-    if rate_bytes >= 1_000_000_000.0 {
-        format!("{:.2} GB/s", rate_bytes / 1_000_000_000.0)
-    } else if rate_bytes >= 1_000_000.0 {
-        format!("{:.2} MB/s", rate_bytes / 1_000_000.0)
-    } else if rate_bytes >= 1_000.0 {
-        format!("{:.2} KB/s", rate_bytes / 1_000.0)
-    } else {
-        format!("{:.0} B/s", rate_bytes)
-    }
-}
-
-fn format_network_total(bytes: u64) -> String
-{
-    let bytes = bytes as f64;
-    if bytes >= 1_000_000_000_000.0 {
-        format!("{:.2} TB", bytes / 1_000_000_000_000.0)
-    } else if bytes >= 1_000_000_000.0 {
-        format!("{:.2} GB", bytes / 1_000_000_000.0)
-    } else if bytes >= 1_000_000.0 {
-        format!("{:.2} MB", bytes / 1_000_000.0)
-    } else if bytes >= 1_000.0 {
-        format!("{:.2} KB", bytes / 1_000.0)
-    } else {
-        format!("{:.0} B", bytes)
-    }
 }
