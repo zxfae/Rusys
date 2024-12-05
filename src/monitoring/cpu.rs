@@ -1,4 +1,4 @@
-use sysinfo::{System, RefreshKind, CpuRefreshKind};
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
 //All informations required
 pub struct CpuInfo {
     pub index: usize,
@@ -16,8 +16,8 @@ impl CpuMonitor {
     pub fn new() -> Self {
         Self {
             system: System::new_with_specifics(
-                RefreshKind::new().with_cpu(CpuRefreshKind::everything())
-            )
+                RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+            ),
         }
     }
 
@@ -25,7 +25,8 @@ impl CpuMonitor {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.system.refresh_cpu_all();
 
-        self.system.cpus()
+        self.system
+            .cpus()
             .iter()
             .enumerate()
             .map(|(i, cpu)| CpuInfo {
