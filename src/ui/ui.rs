@@ -28,7 +28,7 @@ const MIN_CPU_INFO_HEIGHT: u16 = 15;
 pub fn draw(frame: &mut Frame, app: &mut App)
 {
     //Window size
-    let term_size = frame.size();
+    let term_size = frame.area();
 
     //Split horizontal term by 2 50/50
     let horizontal_chunks = Layout::default()
@@ -154,7 +154,6 @@ fn cpu_info(frame: &mut Frame, app: &mut App, area: Rect) {
 
 fn network_info(frame: &mut Frame, app: &mut App, area: Rect)
 {
-    let network_n = app.network_data.len();
     let network_info = Block::default()
     .title(Line::from(vec![
         Span::raw("╭─"),
